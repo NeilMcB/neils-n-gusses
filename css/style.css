@@ -1,0 +1,109 @@
+:root {
+	--colour-primary: #cfd8dc;
+	--colour-dark: #9ea7aa;
+	--colour-light: #ffffff;
+	--colour-background: #eceff1;
+	--colour-accent: #ba68c8;
+}
+
+/* || General styles */
+body {
+	background: var(--colour-background);
+	height: 100vh;
+
+	font-family: "Trebuchet MS", Helvetica, sans-serif;
+
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+.imgWrap {
+	/* Wrapper needed to add shadows above clip-path */
+	width: 5vw;
+}
+img {
+	clip-path: circle(50% at center);
+	height: auto;
+	width: 100%;
+}
+/* Make this a dynamic addition to show whose turn it is
+.imgWrap:hover {
+	filter: drop-shadow(0px 0px 5px var(--colour-accent));
+}*/
+
+button {
+	background: var(--colour-primary);
+	border: none;
+	border-radius: 5px;
+	padding: 10px;
+	opacity: 0.8;
+	width: 49%;
+	
+	font-size: 1em;
+	font-family: inherit;
+}
+button:hover {
+	opacity: 1.0;
+}
+
+
+/* || Container styles */
+#main {
+	border: 1px solid var(--colour-dark);
+	border-radius: 5px;
+	margin: auto;
+	padding: 10px;
+	width: 33vw;
+	
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+}
+
+#scoreboard {	
+	border: 1px solid var(--colour-dark);
+	border-radius: 5px;
+	padding: 10px;
+
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+	align-items: center;
+}
+
+#gameboard {
+	margin: 10px 0px;
+
+	display: grid;
+	grid-template-columns: repeat(3, 1fr);
+	grid-gap: 2px;
+}
+
+#controls {
+	display: flex;
+	flex-direction: row;
+	justify-content: space-between;
+}
+
+/* || Element styles */
+#score {
+	display: flex;
+	flex-direction: row;
+}
+#score p {
+	padding: 0px 5px;
+}
+
+
+.cell {
+	background: var(--colour-light);
+	border: 1px solid var(--colour-light);
+	border-radius: 5px;
+	padding-top: 100%;
+}
+.cell:hover {
+	border: 1px solid var(--colour-dark);
+	box-shadow: inset 0 0 5px var(--colour-dark);
+}
+
