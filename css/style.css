@@ -9,16 +9,14 @@
 /* || General styles */
 body {
 	background: var(--colour-background);
-	height: 100vh;
-
-	font-family: "Trebuchet MS", Helvetica, sans-serif;
-
 	display: flex;
 	flex-direction: column;
+	font-family: "Trebuchet MS", Helvetica, sans-serif;
+	height: 100vh;
 	justify-content: center;
 }
 
-.imgWrap {
+.img_wrap {
 	/* Wrapper needed to add shadows above clip-path */
 	width: 5vw;
 }
@@ -36,13 +34,13 @@ button {
 	background: var(--colour-primary);
 	border: none;
 	border-radius: 5px;
-	padding: 10px;
-	opacity: 0.8;
-	width: 49%;
-	
-	font-size: 1em;
 	font-family: inherit;
+	font-size: 1em;
+	padding: 10px;
+	opacity: 0.6;
+	width: 49%;	
 }
+
 button:hover {
 	opacity: 1.0;
 }
@@ -52,32 +50,29 @@ button:hover {
 #main {
 	border: 1px solid var(--colour-dark);
 	border-radius: 5px;
-	margin: auto;
-	padding: 10px;
-	width: 33vw;
-	
 	display: flex;
 	flex-direction: column;
 	justify-content: center;
+	margin: auto;
+	padding: 10px;
+	width: 33vw;	
 }
 
 #scoreboard {	
+	align-items: center;
 	border: 1px solid var(--colour-dark);
 	border-radius: 5px;
-	padding: 10px;
-
 	display: flex;
 	flex-direction: row;
 	justify-content: space-between;
-	align-items: center;
+	padding: 10px;
 }
 
 #gameboard {
-	margin: 10px 0px;
-
 	display: grid;
-	grid-template-columns: repeat(3, 1fr);
+	margin: 10px 0px;
 	grid-gap: 2px;
+	grid-template-columns: repeat(3, 1fr);
 }
 
 #controls {
@@ -95,15 +90,14 @@ button:hover {
 	padding: 0px 5px;
 }
 
-
 .cell {
 	background: var(--colour-light);
 	border: 1px solid var(--colour-light);
 	border-radius: 5px;
 	padding-top: 100%;
 }
+
 .cell:hover {
 	border: 1px solid var(--colour-dark);
 	box-shadow: inset 0 0 5px var(--colour-dark);
 }
-
