@@ -16,6 +16,9 @@ body {
 	justify-content: center;
 }
 
+.cell_img {
+	width: none;
+}
 .img_wrap {
 	/* Wrapper needed to add shadows above clip-path */
 	width: 5vw;
@@ -55,7 +58,6 @@ button:hover {
 	justify-content: center;
 	margin: auto;
 	padding: 10px;
-	width: 33vw;	
 }
 
 #scoreboard {	
@@ -72,7 +74,8 @@ button:hover {
 	display: grid;
 	margin: 10px 0px;
 	grid-gap: 2px;
-	grid-template-columns: repeat(3, 1fr);
+	grid-template-columns: repeat(3, 11vw);
+	grid-template-rows: repeat(3, 11vw);
 }
 
 #controls {
@@ -94,7 +97,6 @@ button:hover {
 	background: var(--colour-light);
 	border: 1px solid var(--colour-light);
 	border-radius: 5px;
-	padding-top: 100%;
 }
 
 .cell:hover {
