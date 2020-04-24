@@ -28,10 +28,9 @@ img {
 	height: auto;
 	width: 100%;
 }
-/* Make this a dynamic addition to show whose turn it is
-.imgWrap:hover {
+.img_wrap_highlight {
 	filter: drop-shadow(0px 0px 5px var(--colour-accent));
-}*/
+}
 
 button {
 	background: var(--colour-primary);

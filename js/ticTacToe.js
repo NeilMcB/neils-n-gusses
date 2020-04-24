@@ -120,13 +120,20 @@ const gameboard = (() => {
 	}
 	const _getCellAt = (i, j) => _gameboard[_coordinateToIndex(i, j)]
 	// -- API --
+	const getWidth = () => _width
+	const getHeight = () => _height
 	const setMarkerAt = (i, j, marker) => _getCellAt(i, j).setMarker(marker)
 	const getMarkerAt = (i, j) => _getCellAt(i, j).getMarker()
 	const isEmptyAt = (i, j) => _getCellAt(i, j).isEmpty()
+	const isFull = () => _gameboard.every(cell => !cell.isEmpty())
 	const clear = () => 
 		_gameboard = Array.from({length: _width*_height}, () => Cell())
 
-	return {setMarkerAt, getMarkerAt, clear, isEmptyAt}
+	return {setMarkerAt, getMarkerAt, 
+			getHeight, getWidth, 
+			isEmptyAt, isFull,
+			clear,
+		}
 })()
 
 
@@ -171,23 +178,91 @@ const game = (() => {
 	const getState = () => _state
 
 	const _setPlayer = (player, index) => _players[index] = player
-	const setPlayerA = (player) => _setPlayer(player, 0)
-	const setPlayerB = (player) => _setPlayer(player, 1)
-
+	const initialisePlayers = () => {
+		_setPlayer(Player(prompt("Player name:", "Neilts"), teams.NEIL), 0)
+		_setPlayer(Player(prompt("Player name:", "Gusses"), teams.GUS), 1)
+	}
 	const toggleActivePlayer = () => _activePlayerIndex ^= 1  // Bitwise XOR
 	const getActivePlayerIndex = () => _activePlayerIndex
+	const getPlayerA = () => _players[0]
+	const getPlayerB = () => _players[1]
 
+	const isEmptyAt = (i, j) => {
+		return gameboard.isEmptyAt(i, j)
+	}
 	const setMarkerAt = (i, j) => {
-		if (gameboard.isEmptyAt(i, j)) {
-			const marker = _players[_activePlayerIndex].getMarker()
-			gameboard.setMarkerAt(i, j, marker)
-			return true
-		} else {
-			return false
+		const marker = _players[_activePlayerIndex].getMarker()
+		gameboard.setMarkerAt(i, j, marker)
+	}
+	const updateScore = (result) => {
+		switch(result) {
+			case gameResult.WIN_A:
+				_players[0].incrementScore()
+				break;
+			case gameResult.WIN_B:
+				_players[1].incrementScore()
+				break;
+			case gameResult.DRAW:
+				// Do nothing
+				break;
 		}
 	}
-	const checkForResult = () => {
-		// TODO!
+
+	// TODO(mcbln): refactor this to say where the win was? Can then highlight.
+	const checkForResultAt = (i, j) => {
+		const placedMarker = _players[_activePlayerIndex].getMarker()
+		const playerWin = [
+			_checkRowForWin(i),
+			_checkColForWin(j),
+			_checkDiagonalForWin,
+		].some(checker => checker(placedMarker))
+		
+		if (playerWin) {
+			if (_activePlayerIndex === 0) {
+				return gameResult.WIN_A
+			} else {
+				return gameResult.WIN_B
+			}
+		} else {
+			if (gameboard.isFull()) {
+				return gameResult.DRAW
+			} else {
+				return gameResult.IN_PROGRESS
+			}
+		}
+	}
+
+	const _checkLineForWin = (playerMarker, index, dimension) => {
+		// TODO(mcbln): assumes equal height and width - fix
+		// Get either rows (dimension = 0) or cols
+		const getMarkerMap = (dimension == 0) 
+			? oppDimIndex => gameboard.getMarkerAt(index, oppDimIndex)
+			: oppDimIndex => gameboard.getMarkerAt(oppDimIndex, index)
+		return [...Array(gameboard.getWidth()).keys()]  // eq to python range()
+			.map(getMarkerMap)
+			.every(marker => marker === playerMarker)
+	}
+	// Curried
+	const _checkRowForWin = rowIndex => playerMarker => {
+		return _checkLineForWin(playerMarker, rowIndex, 0)
+	}
+	// Curried
+	const _checkColForWin = colIndex => playerMarker => {
+		return _checkLineForWin(playerMarker, colIndex, 1)
+	}
+	// TODO(mcbln): this is all hardcoded
+	const _checkDiagonalForWin = (playerMarker) => {
+		const winOnDiagL2R = [
+			gameboard.getMarkerAt(0,0),
+			gameboard.getMarkerAt(1,1),
+			gameboard.getMarkerAt(2,2),
+		].every(marker => marker === playerMarker)
+		const winOnDiagR2L = [
+			gameboard.getMarkerAt(2,0),
+			gameboard.getMarkerAt(1,1),
+			gameboard.getMarkerAt(0,2),
+		].every(marker => marker === playerMarker)
+		return winOnDiagL2R || winOnDiagR2L
 	}
 
 	// TODO(mcbln): must be a nicer way to do this
@@ -195,18 +270,19 @@ const game = (() => {
 		_state = gameState.NEW
 		_players = new Array(2)
 		_activePlayerIndex = 0
-		clear()
+		clearBoard()
 	}
-	const clear = () => {
+	const clearBoard = () => {
 		gameboard.clear()
 	}
 
 	return {
 		setState, getState, 
-		setPlayerA, setPlayerB, 
+		initialisePlayers, getPlayerA, getPlayerB,
 		toggleActivePlayer, getActivePlayerIndex,
-		setMarkerAt, 
-		reset, clear,
+		isEmptyAt, setMarkerAt, 
+		updateScore, checkForResultAt,
+		reset, clearBoard,
 	}
 })()
 
@@ -214,52 +290,61 @@ const game = (() => {
 // *** Controller ***
 /**
  * Singleton object for controlling the game state.
- * TODO(mcbln): what is the proper way to document modules>
+ * TODO(mcbln): what is the proper way to document modules?
  */
 const gameController = (() => {
-	const _initialisePlayers = () => {
-		game.setPlayerA(Player(prompt("Player name:", "Neilts"), teams.NEIL))
-		game.setPlayerB(Player(prompt("Player name:", "Gusses"), teams.GUS))
-	}
-
-	const newRound = () => {
-		if (game.getState() === gameState.NEW) _initialisePlayers()
-		game.clear()
+	// button: "new round"
+	const newRoundInput = () => {
+		if (game.getState() === gameState.NEW) {
+			game.initialisePlayers()
+		} else {
+			game.clearBoard()
+		}
 		game.setState(gameState.IN_PROGRESS)
 	}
-	const reset = () => {
+	// button: "reset"
+	const resetInput = () => {
 		game.reset()
+		game.setState(gameState.NEW)
 	}
-	const setMarkerAt = (i, j) => {
+	// cell at location (i, j)
+	const cellInput = (i, j) => {
 		if (game.getState() === gameState.IN_PROGRESS) {
-			// marker not set if marker already in that spot
-			const markerSet = game.setMarkerAt(i, j)
-			if (markerSet) game.toggleActivePlayer()
+			if (game.isEmptyAt(i, j)) {
+				game.setMarkerAt(i, j)
+				
+				const result = game.checkForResultAt(i, j)
+				if (result != gameResult.IN_PROGRESS) {
+					game.updateScore(result)
+					game.setState(gameState.STOPPED)
+				}
+
+				game.toggleActivePlayer()
+			}
 		}
 	}
 
-	return {newRound, reset, setMarkerAt}
+	return {newRoundInput, resetInput, cellInput}
 })()
 
 
 // TODO(mcbln): is there a wrapper for rendering after every click?
 const btnNew = document.getElementById("new")
 btnNew.addEventListener("click", () => {
-	gameController.newRound()
+	gameController.newRoundInput()
 	display.render()
 })
 const btnReset = document.getElementById("reset")
 btnReset.addEventListener("click", () => {
-	gameController.reset()
+	gameController.resetInput()
 	display.render()
 })
-
 const cells = document.querySelectorAll(".cell")
 cells.forEach((cell) => 
     cell.addEventListener("click", (event) => {
         const i = +event.target.getAttribute("data-i")
         const j = +event.target.getAttribute("data-j")
-        gameController.setMarkerAt(i, j)
+        gameController.cellInput(i, j)
         display.render()
     })
 )
@@ -270,25 +355,64 @@ const display = (() => {
 	// Scoreboard ToDo...
 	// Duplication here - how to tidy?
 	const _cells = document.querySelectorAll(".cell")
+	const _scoreboard = document.querySelector("#scoreboard")
+	const _playerNameA = _scoreboard.querySelector("#player_neil")
+	const _playerNameB = _scoreboard.querySelector("#player_gus")
+	const _scoreA = _scoreboard.querySelector("#score_neil")
+	const _scoreB = _scoreboard.querySelector("#score_gus")
+	const _playerPictureA = _scoreboard.querySelector("#team_neil")
+	const _playerPictureB = _scoreboard.querySelector("#team_gus")
+	const _highlightClass = "img_wrap_highlight"
 
 
-	const _render_scoreboard = () => {}
-	const _render_cells = () => {
+	const _renderScoreboard = () => {
+		const playerA = game.getPlayerA() || Player("Player A", null)
+		const playerB = game.getPlayerB() || Player("Player B", null)
+
+		_playerNameA.innerHTML = playerA.getName()
+		_playerNameB.innerHTML = playerB.getName()
+
+		_scoreA.innerHTML = playerA.getScore()
+		_scoreB.innerHTML = playerB.getScore()
+
+		_highlightActivePlayer()
+	}
+	const _highlightActivePlayer = () => {
+		const activePlayerIndex = game.getActivePlayerIndex()
+		const isActivePlayerA = activePlayerIndex === 0
+		_setPlayerHighlight(_playerPictureA, isActivePlayerA, _highlightClass)
+		_setPlayerHighlight(_playerPictureB, !isActivePlayerA, _highlightClass)
+	}
+	const _setPlayerHighlight = (playerPicture, toHighlight, highlightClass) => {
+		const playerClassList = playerPicture.classList
+		if (game.getState() === gameState.IN_PROGRESS  && toHighlight) {
+			// Highlight isn't applied -> add it
+			if (!playerClassList.contains(highlightClass)) {
+				playerClassList.add(highlightClass)
+			}
+		} else {
+			// Highlight is applied -> remove it
+			if (playerClassList.contains(highlightClass)) {
+				playerClassList.remove(highlightClass)
+			}
+		}
+	}
+	const _renderCells = () => {
 		_cells.forEach((cell) => {
-			_clear_cell(cell)
-			_render_cell(cell)
+			_clearCell(cell)
+			_renderCell(cell)
         })
 	}
-	const _clear_cell = (cell) => cell.innerHTML = "" 
-	const _render_cell = (cell) => {
+	const _clearCell = (cell) => cell.innerHTML = "" 
+	const _renderCell = (cell) => {
 		const i = +cell.getAttribute("data-i")
         const j = +cell.getAttribute("data-j")
     	if (!gameboard.isEmptyAt(i, j)) {
     		const imagePath = gameboard.getMarkerAt(i, j).getImagePath()
-    		cell.appendChild(_create_img_element(imagePath))
+    		cell.appendChild(_createImgElement(imagePath))
     	}
 	}
-	const _create_img_element = (imagePath) => {
+	const _createImgElement = (imagePath) => {
 		const image = document.createElement("img")
 		image.classList.add("cell_img")
 		image.src = imagePath
@@ -296,9 +420,9 @@ const display = (() => {
 		return image
 	}
 	const render = () => {
-		_render_scoreboard()
-		_render_cells()
+		_renderScoreboard()
+		_renderCells()
 	}
 
-	return {render, _create_img_element}
+	return {render}
 })()
